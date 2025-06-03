@@ -22,6 +22,8 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
+
+	GetClient() *sql.DB
 }
 
 type service struct {
@@ -29,7 +31,8 @@ type service struct {
 }
 
 var (
-	dburl      = os.Getenv("BLUEPRINT_DB_URL")
+	// db url parameters for WAL mode, timeout for concurrent writes, and for foreing key checking
+	dburl      = os.Getenv("BLUEPRINT_DB_URL") + "?_journal=WAL&_timeout=5000&_fk=true"
 	dbInstance *service
 )
 
@@ -46,10 +49,45 @@ func New() Service {
 		log.Fatal(err)
 	}
 
+	err = Init(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	dbInstance = &service{
 		db: db,
 	}
 	return dbInstance
+}
+
+func Init(db *sql.DB) error {
+	// Users table initialization query if it does not exist
+	const createUsersTable string = `CREATE TABLE IF NOT EXISTS users (
+		id INTEGER NOT NULL PRIMARY KEY,
+		username TEXT NOT NULL UNIQUE,
+		password BLOB NOT NULL
+	);`
+
+	// Execute initialization query
+	if _, err := db.Exec(createUsersTable); err != nil {
+		return fmt.Errorf("error creating User table: %v", err)
+	}
+
+	// Sessions table initializaiton query if it does not exist
+	const createSessionsTable string = `CREATE TABLE IF NOT EXISTS sessions (
+		id INTEGER NOT NULL PRIMARY KEY,
+		sessionId TEXT NOT NULL,
+		createdAt TEXT NOT NULL,
+		lastActive TEXT NOT NULL,
+		data BLOB NOT NULL
+	);`
+
+	// Execute initialization query
+	if _, err := db.Exec(createSessionsTable); err != nil {
+		return fmt.Errorf("error creating Sessions table: %v", err)
+	}
+
+	return nil
 }
 
 // Health checks the health of the database connection by pinging the database.
@@ -110,4 +148,21 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", dburl)
 	return s.db.Close()
+}
+
+func (s *service) GetClient() *sql.DB {
+	return s.db
+}
+
+func (s *service) GetUser(username string) (int64, error) {
+	var id int64
+	err := s.db.QueryRow(
+		"SELECT id From users (username) VALUES (?)",
+		username,
+	).Scan(&id)
+	if err == sql.ErrNoRows {
+		return 0, fmt.Errorf("user not found in db: %v", err)
+	}
+
+	return id, nil
 }
