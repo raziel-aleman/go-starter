@@ -24,6 +24,8 @@ type Service interface {
 	Close() error
 
 	GetClient() *sql.DB
+
+	GetUser(string) (int64, error)
 }
 
 type service struct {

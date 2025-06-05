@@ -114,22 +114,6 @@ func (s *Server) HomeHandler(w http.ResponseWriter, r *http.Request) {
 // protectedHandler demonstrates a route that requires a logged-in user.
 func (s *Server) ProtectedHandler(w http.ResponseWriter, r *http.Request) {
 	session := sm.GetSession(r)
-	if session == nil {
-		http.Error(w, "Unauthorized: No session found", http.StatusUnauthorized)
-		return
-	}
-
-	loggedIn := session.Get("loggedIn")
-	if loggedIn == nil {
-		http.Error(w, "Unauthorized: Not logged in", http.StatusUnauthorized)
-		return
-	} else {
-		if !loggedIn.(bool) {
-			http.Error(w, "Unauthorized: Not logged in", http.StatusUnauthorized)
-			return
-		}
-	}
-
 	userID := session.Get("username")
 	fmt.Fprintf(w, "Welcome, %s! This is a protected area.\n", userID)
 }
@@ -145,7 +129,7 @@ func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		srw.StatusCode = http.StatusSeeOther
-		srw.ResponseWriter.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/") // Redirect to home page
+		srw.ResponseWriter.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/")
 	}
 
 	fmt.Printf("Logged out successfully! Session destroyed.\n")
@@ -176,9 +160,16 @@ func (s *Server) DebugSessionHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	session := sm.GetSession(r)
 
-	// In a real application, you'd authenticate the user here.
+	// In a real application, you'd get the user from a the client.
 	// For example purposes, we'll just set a dummy user.
-	user := auth.User{Username: "user123", Password: []byte("general123")}
+	user := auth.User{Username: "user1234", Password: []byte("general123")}
+
+	err := auth.VerifyCredentials(s.db.GetClient(), user)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	if srw, ok := w.(*sm.SessionResponseWriter); ok {
 		if session.Get("username") != "guest" {
@@ -189,11 +180,12 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		err := auth.Login(r, srw, user)
 		if err != nil {
+			log.Println(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		srw.StatusCode = http.StatusSeeOther
-		srw.ResponseWriter.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/") // Redirect to home page
+		srw.ResponseWriter.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/")
 	}
 
 	fmt.Printf("User logged in successfully! Session updated for user: %s\n", user.Username)
@@ -203,7 +195,9 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	user := auth.User{Username: "user123", Password: []byte("general123")}
 	_, err := auth.Register(s.db.GetClient(), user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err)
+		w.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/")
+		w.WriteHeader(http.StatusSeeOther)
 		return
 	}
 
@@ -218,6 +212,6 @@ func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		srw.StatusCode = http.StatusSeeOther
-		srw.ResponseWriter.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/") // Redirect to home page
+		srw.ResponseWriter.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/")
 	}
 }

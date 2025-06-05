@@ -85,7 +85,6 @@ func Login(
 	}
 
 	newSession.Put("username", user.Username)
-	newSession.Put("loggedIn", true)
 
 	srw.Session = newSession
 
