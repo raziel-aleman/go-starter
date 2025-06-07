@@ -16,7 +16,7 @@ type User struct {
 }
 
 func Register(
-	db *sql.DB,
+	dbService database.Service,
 	user User,
 ) (int64, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword(
@@ -27,11 +27,7 @@ func Register(
 		return 0, fmt.Errorf("error hashing user password while registering: %v", err)
 	}
 
-	result, err := db.Exec(
-		"INSERT INTO users (username, password) VALUES (?, ?)",
-		user.Username,
-		hashedPassword,
-	)
+	result, err := dbService.RegisterUser(user.Username, hashedPassword)
 	if err != nil {
 		return 0, fmt.Errorf("error registering user: %v", err)
 	}
@@ -45,22 +41,19 @@ func Register(
 }
 
 func VerifyCredentials(
-	db *sql.DB,
+	dbService database.Service,
 	user User,
 ) error {
-	var passwordInDB string
+	var passwordInDB []byte
 
-	err := db.QueryRow(
-		"SELECT password FROM users WHERE username = ?",
-		user.Username,
-	).Scan(&passwordInDB)
+	passwordInDB, err := dbService.VerifyCredentials(user.Username)
 	if err != nil {
 		return fmt.Errorf("invalid username: %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword(
-		[]byte(passwordInDB),
-		[]byte(user.Password),
+		passwordInDB,
+		user.Password,
 	)
 	if err != nil {
 		return fmt.Errorf("invalid password: %w", err)
@@ -114,7 +107,6 @@ func Logout(
 
 func AuthMiddleware(dbservice database.Service, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := dbservice.GetClient()
 		session := session.GetSession(r)
 
 		username := session.Get("username").(string)
@@ -123,11 +115,7 @@ func AuthMiddleware(dbservice database.Service, next http.Handler) http.Handler 
 			return
 		}
 
-		var exists bool
-		err := db.QueryRow(
-			"SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)",
-			username,
-		).Scan(&exists)
+		err := dbservice.UserExists(username)
 		if err == sql.ErrNoRows {
 			http.Error(w, "Unauthenticated", http.StatusForbidden)
 			return

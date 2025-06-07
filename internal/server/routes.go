@@ -162,9 +162,10 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// In a real application, you'd get the user from a the client.
 	// For example purposes, we'll just set a dummy user.
-	user := auth.User{Username: "user1234", Password: []byte("general123")}
+	user := auth.User{Username: "user123", Password: []byte("general123")}
 
-	err := auth.VerifyCredentials(s.db.GetClient(), user)
+	//err := auth.VerifyCredentials(s.db.GetClient(), user)
+	err := auth.VerifyCredentials(s.db, user)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -193,7 +194,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	user := auth.User{Username: "user123", Password: []byte("general123")}
-	_, err := auth.Register(s.db.GetClient(), user)
+	_, err := auth.Register(s.db, user)
 	if err != nil {
 		log.Println(err)
 		w.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/")

@@ -23,9 +23,11 @@ type Service interface {
 	// It returns an error if the connection cannot be closed.
 	Close() error
 
-	GetClient() *sql.DB
+	RegisterUser(string, []byte) (sql.Result, error)
 
-	GetUser(string) (int64, error)
+	VerifyCredentials(string) ([]byte, error)
+
+	UserExists(string) error
 }
 
 type service struct {
@@ -152,19 +154,29 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
-func (s *service) GetClient() *sql.DB {
-	return s.db
+func (s *service) RegisterUser(username string, hashedPassword []byte) (sql.Result, error) {
+	result, err := s.db.Exec(
+		"INSERT INTO users (username, password) VALUES (?, ?)",
+		username,
+		hashedPassword,
+	)
+	return result, err
 }
 
-func (s *service) GetUser(username string) (int64, error) {
-	var id int64
+func (s *service) VerifyCredentials(username string) ([]byte, error) {
+	var passwordInDB []byte
 	err := s.db.QueryRow(
-		"SELECT id From users (username) VALUES (?)",
+		"SELECT password FROM users WHERE username = ?",
 		username,
-	).Scan(&id)
-	if err == sql.ErrNoRows {
-		return 0, fmt.Errorf("user not found in db: %v", err)
-	}
+	).Scan(&passwordInDB)
 
-	return id, nil
+	return passwordInDB, err
+}
+
+func (s *service) UserExists(username string) error {
+	err := s.db.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)",
+		username,
+	).Scan()
+	return err
 }
