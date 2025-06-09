@@ -1,10 +1,30 @@
-# Project go-starter
+# go-starter
+Use this project as a starter template for personal projects:
 
-One Paragraph of project description goes here
+1. **Clone the base repository:**
+    ```bash
+    git clone <URL_of_base_repo>
+    ```
+    Replace `<URL_of_base_repo>` with the actual URL of your base repository. This will create a local copy of the base project on your machine.
 
-## Getting Started
+2.  **Delete the existing Git history:**
+    Navigate into the newly cloned directory and remove the `.git` directory. This step is crucial because it severs the connection to the original base repository's Git history.
+    ```bash
+    cd <newly_cloned_directory>
+    rm -rf .git
+    ```
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+3.  **Initialize a new Git repository:**
+    From within the cloned directory, initialize a fresh Git repository. This creates a brand-new, empty Git history for your new project.
+    ```bash
+    git init
+    ```
+
+4.  **Add a new remote origin:**
+    Connect your new local repository to a new remote repository on a platform like GitHub, Bitbucket, or others. Replace `<remote_URL>` with the URL of your new, empty repository.
+    ```bash
+    git remote add origin <remote_URL>
+    ```
 
 ## MakeFile
 

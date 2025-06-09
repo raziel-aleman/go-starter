@@ -132,7 +132,7 @@ func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		srw.ResponseWriter.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/")
 	}
 
-	fmt.Printf("Logged out successfully! Session destroyed.\n")
+	log.Printf("Logged out successfully! Session destroyed.\n")
 }
 
 // DebugSessionHandler for inspecting raw session data (for debugging only).
@@ -174,7 +174,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if srw, ok := w.(*sm.SessionResponseWriter); ok {
 		if session.Get("username") != "guest" {
-			fmt.Printf("%s already logged in", session.Get("username"))
+			log.Printf("%s already logged in", session.Get("username"))
 			srw.StatusCode = http.StatusFound
 			srw.ResponseWriter.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/")
 			return
@@ -189,7 +189,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		srw.ResponseWriter.Header().Set("Location", "http://localhost:"+strconv.Itoa(s.port)+"/")
 	}
 
-	fmt.Printf("User logged in successfully! Session updated for user: %s\n", user.Username)
+	log.Printf("User logged in successfully! Session updated for user: %s\n", user.Username)
 }
 
 func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
