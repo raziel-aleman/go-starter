@@ -56,6 +56,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// HelloWorldHandler returns a simple hello world message.
 func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]string{"message": "Hello World"}
 	jsonResp, err := json.Marshal(resp)
@@ -69,6 +70,7 @@ func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// HealthHandler returns a map of health status information for the database service.
 func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := json.Marshal(s.db.Health())
 	if err != nil {
@@ -81,7 +83,7 @@ func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// homeHandler shows how to interact with the session.
+// HomeHandler shows how to interact with the session.
 func (s *Server) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	session := sm.GetSession(r)
 	if session == nil {
@@ -111,14 +113,14 @@ func (s *Server) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "You have visited this page %d times in this session.\n", session.Get("visits").(int))
 }
 
-// protectedHandler demonstrates a route that requires a logged-in user.
+// ProtectedHandler is a simple route that will be wrapped with the AuthMiddleware.
 func (s *Server) ProtectedHandler(w http.ResponseWriter, r *http.Request) {
 	session := sm.GetSession(r)
 	userID := session.Get("username")
 	fmt.Fprintf(w, "Welcome, %s! This is a protected area.\n", userID)
 }
 
-// logoutHandler destroys the current session.
+// LogoutHandler destroys the current session.
 func (s *Server) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Signal to the SessionResponseWriter that the session has been destroyed.
 	// This ensures the session cookie is cleared correctly by the middleware.
@@ -156,7 +158,7 @@ func (s *Server) DebugSessionHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonBytes)
 }
 
-// loginHandler simulates a user login and updates the session.
+// loginHandler simulates a user login and migrates the session.
 func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	session := sm.GetSession(r)
 
@@ -192,6 +194,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("User logged in successfully! Session updated for user: %s\n", user.Username)
 }
 
+// RegisterHandler simulates registering a new user.
 func (s *Server) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	user := auth.User{Username: "user123", Password: []byte("general123")}
 	_, err := auth.Register(s.db, user)

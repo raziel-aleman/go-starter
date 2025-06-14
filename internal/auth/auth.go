@@ -10,11 +10,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Exmample user struct.
 type User struct {
 	Username string `json:"username"`
 	Password []byte `json:"-"`
 }
 
+// Register uses database service to register new user
+// by inserting new record in the database.
 func Register(
 	dbService database.Service,
 	user User,
@@ -40,6 +43,8 @@ func Register(
 	return id, nil
 }
 
+// VerifyCredentials uses database service to retrive hashed password and
+// then compare it with submitted password.
 func VerifyCredentials(
 	dbService database.Service,
 	user User,
@@ -62,6 +67,8 @@ func VerifyCredentials(
 	return nil
 }
 
+// Login migrates the session by calling the session manager in the session response writer
+// and updates the username value in the session.
 func Login(
 	r *http.Request,
 	srw *session.SessionResponseWriter,
@@ -84,6 +91,8 @@ func Login(
 	return nil
 }
 
+// Logout destroys the session in the session manager and
+// sets the session destroyed flag in the session response writer.
 func Logout(
 	r *http.Request,
 	srw *session.SessionResponseWriter,
@@ -105,6 +114,9 @@ func Logout(
 	return nil
 }
 
+// AuthMiddleware checks the username in the request session, if it is "guest" the user
+// is not authenticated, if it is different,it will then check against the database that
+// the user is registered.
 func AuthMiddleware(dbservice database.Service, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session := session.GetSession(r)

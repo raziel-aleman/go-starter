@@ -230,7 +230,7 @@ func (sm *SessionManager) isValid(session *Session) bool {
 	return true
 }
 
-// Migrate session from unauthenticated user to authenticated user
+// Migrate updates session from unauthenticated user to authenticated user
 func (sm *SessionManager) Migrate(session *Session) (*Session, error) {
 	session.Lock()
 	defer session.Unlock()

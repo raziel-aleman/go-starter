@@ -23,10 +23,15 @@ type Service interface {
 	// It returns an error if the connection cannot be closed.
 	Close() error
 
+	// RegisterUser inserts a new user into the users table.
+	// It returns an error if a user cannot be inserted.
 	RegisterUser(string, []byte) (sql.Result, error)
 
+	// VerifyCredentials checks a user exists in the users table
+	// and retrieves the hashed password.
 	VerifyCredentials(string) ([]byte, error)
 
+	// UserExists check a user exists in the users table.
 	UserExists(string) error
 }
 
@@ -154,6 +159,8 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
+// RegisterUser inserts a new user into the users table.
+// It returns an error if a user cannot be inserted.
 func (s *service) RegisterUser(username string, hashedPassword []byte) (sql.Result, error) {
 	result, err := s.db.Exec(
 		"INSERT INTO users (username, password) VALUES (?, ?)",
@@ -163,6 +170,8 @@ func (s *service) RegisterUser(username string, hashedPassword []byte) (sql.Resu
 	return result, err
 }
 
+// VerifyCredentials checks a user exists in the users table.
+// If the user exists, it retrieves the hashed password.
 func (s *service) VerifyCredentials(username string) ([]byte, error) {
 	var passwordInDB []byte
 	err := s.db.QueryRow(
@@ -173,6 +182,7 @@ func (s *service) VerifyCredentials(username string) ([]byte, error) {
 	return passwordInDB, err
 }
 
+// UserExists check a user exists in the users table.
 func (s *service) UserExists(username string) error {
 	err := s.db.QueryRow(
 		"SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)",
